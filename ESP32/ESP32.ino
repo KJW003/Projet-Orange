@@ -13,7 +13,7 @@ const uint16_t WS_PORT = 443; // HTTPS/WSS sur Render
 const char* WS_PATH = "/ws";
 
 // ——— Pin LED ———
-const int LED_PIN = 2; // LED intégrée de l'ESP32
+const int LED_PIN = 23; // LED intégrée de l'ESP32
 
 WebSocketsClient webSocket;
 Ticker heartbeat;
