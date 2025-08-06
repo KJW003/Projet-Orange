@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API</title>
+</head>
+<body>
+    <h1>Test de l'API</h1>
+    <button onclick="testAPI()">Tester l'API</button>
+    <pre id="result"></pre>
+    
+    <script>
+        async function testAPI() {
+            try {
+                console.log('Appel de l\'API...');
+                const response = await fetch('/api/stats');
+                console.log('Réponse reçue:', response);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Données:', data);
+                
+                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('Erreur:', error);
+                document.getElementById('result').textContent = 'Erreur: ' + error.message;
+            }
+        }
+        
+        // Test automatique au chargement
+        window.addEventListener('load', testAPI);
+    </script>
+</body>
+</html>

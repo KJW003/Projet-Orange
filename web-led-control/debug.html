@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard LED - Debug</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f7fa; }
+    .card { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin: 20px 0; }
+    .stat-item { background: #34495e; color: white; padding: 15px; border-radius: 5px; text-align: center; }
+    .stat-value { font-size: 24px; font-weight: bold; display: block; }
+    .stat-label { font-size: 12px; margin-top: 5px; }
+    button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+    #debug { background: #ecf0f1; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <h1>🔆 Dashboard LED - Version Debug</h1>
+  
+  <div class="card">
+    <h2>📊 Statistiques</h2>
+    <div class="stats-grid">
+      <div class="stat-item">
+        <span class="stat-value" id="scans">?</span>
+        <div class="stat-label">Scans QR</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value" id="ledOnCount">?</span>
+        <div class="stat-label">LED On</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value" id="ledOffCount">?</span>
+        <div class="stat-label">LED Off</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value" id="heartbeats">?</span>
+        <div class="stat-label">Heartbeats</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value" id="reconnects">?</span>
+        <div class="stat-label">Reconnexions</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value" id="uptime">?</span>
+        <div class="stat-label">Uptime</div>
+      </div>
+    </div>
+    <button onclick="loadStats()">🔄 Actualiser</button>
+  </div>
+
+  <div class="card">
+    <h2>🔧 Debug</h2>
+    <div id="debug">En attente...</div>
+  </div>
+
+  <script>
+    function formatUptime(ms) {
+      const seconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+      
+      if (days > 0) return `${days}j ${hours % 24}h`;
+      if (hours > 0) return `${hours}h ${minutes % 60}m`;
+      if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+      return `${seconds}s`;
+    }
+
+    async function loadStats() {
+      const debugDiv = document.getElementById('debug');
+      debugDiv.textContent = 'Chargement des statistiques...';
+      
+      try {
+        console.log('=== DEBUT CHARGEMENT STATS ===');
+        
+        const response = await fetch('/api/stats');
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Données reçues:', data);
+        
+        // Mise à jour des éléments
+        const elements = {
+          scans: data.scans || 0,
+          ledOnCount: data.ledOnCount || 0,
+          ledOffCount: data.ledOffCount || 0,
+          heartbeats: data.heartbeats || 0,
+          reconnects: data.reconnects || 0,
+          uptime: formatUptime(data.uptime || 0)
+        };
+        
+        console.log('Éléments à mettre à jour:', elements);
+        
+        // Mise à jour de chaque élément
+        for (const [id, value] of Object.entries(elements)) {
+          const element = document.getElementById(id);
+          if (element) {
+            element.textContent = value;
+            console.log(`Mis à jour ${id}: ${value}`);
+          } else {
+            console.error(`Élément ${id} non trouvé !`);
+          }
+        }
+        
+        debugDiv.innerHTML = `
+          <strong>✅ Succès!</strong><br>
+          Dernière mise à jour: ${new Date().toLocaleTimeString()}<br>
+          Données: ${JSON.stringify(data, null, 2)}
+        `;
+        
+        console.log('=== FIN CHARGEMENT STATS ===');
+        
+      } catch (error) {
+        console.error('Erreur lors du chargement:', error);
+        debugDiv.innerHTML = `
+          <strong>❌ Erreur!</strong><br>
+          ${error.message}<br>
+          <small>Voir la console pour plus de détails</small>
+        `;
+      }
+    }
+    
+    // Chargement automatique
+    window.addEventListener('load', () => {
+      console.log('Page chargée, début du test...');
+      loadStats();
+    });
+    
+    // Auto-refresh toutes les 5 secondes
+    setInterval(loadStats, 5000);
+  </script>
+</body>
+</html>
