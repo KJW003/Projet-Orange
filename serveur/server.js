@@ -27,6 +27,7 @@ const statsSchema = new mongoose.Schema({
   ledOnCount: { type: Number, default: 0 },
   ledOffCount: { type: Number, default: 0 },
   lastScan: { type: Date, default: null },
+  lastHeartbeat: { type: Date, default: null },
   uptimeStart: { type: Date, default: Date.now }
 });
 
@@ -50,20 +51,29 @@ let espSocket = null;
 const wss = new WebSocket.Server({ server, path: '/ws' });
 wss.on('connection', ws => {
   espSocket = ws;
-  Stats.findByIdAndUpdate('counters', { $inc: { reconnects: 1 } }).exec();
-  console.log('[WS] ESP32 connecté');
+  Stats.findByIdAndUpdate('counters', { 
+    $inc: { reconnects: 1 },
+    $set: { lastHeartbeat: new Date() }
+  }).exec();
+  console.log('[WS] ESP32 connecté - heartbeat initial enregistré');
 
   ws.on('message', msg => {
     const obj = JSON.parse(msg);
     switch(obj.event) {
       case 'heartbeat':
-        Stats.findByIdAndUpdate('counters', { $inc: { heartbeats: 1 } }).exec();
+        Stats.findByIdAndUpdate('counters', { 
+          $inc: { heartbeats: 1 },
+          $set: { lastHeartbeat: new Date() }
+        }).exec();
+        console.log('[WS] Heartbeat ESP32 reçu');
         break;
       case 'led_on':
         Stats.findByIdAndUpdate('counters', { $inc: { ledOnCount: 1 } }).exec();
+        console.log('[WS] LED ON confirmée');
         break;
       case 'led_off':
         Stats.findByIdAndUpdate('counters', { $inc: { ledOffCount: 1 } }).exec();
+        console.log('[WS] LED OFF confirmée');
         break;
     }
   });
@@ -108,7 +118,8 @@ app.get('/api/stats', async (req, res) => {
   res.json({ 
     ...stats, 
     uptime: Date.now() - stats.uptimeStart,
-    ledDuration: config ? config.ledDuration : 5000
+    ledDuration: config ? config.ledDuration : 5000,
+    lastHeartbeat: stats.lastHeartbeat
   });
 });
 app.post('/api/config', async (req, res) => {
