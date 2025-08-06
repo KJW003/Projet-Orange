@@ -7,7 +7,6 @@ const mongoose  = require('mongoose');
 
 const app        = express();
 const PORT_HTTP  = process.env.PORT || 3000; // Render utilise process.env.PORT
-const WS_PORT    = process.env.WS_PORT || 8081;
 const MONGODB_URI= process.env.MONGODB_URI;
 
 // 1. Connexion à MongoDB Atlas
@@ -41,9 +40,14 @@ async function initDb() {
 }
 initDb();
 
-// 3. WebSocket server pour l'ESP32
+// 8. Démarrage du serveur HTTP
+const server = app.listen(PORT_HTTP, () => {
+  console.log(`HTTP & PWA sur http://localhost:${PORT_HTTP}`);
+});
+
+// 3. WebSocket server intégré au serveur HTTP
 let espSocket = null;
-const wss = new WebSocket.Server({ port: WS_PORT, path: '/ws' });
+const wss = new WebSocket.Server({ server, path: '/ws' });
 wss.on('connection', ws => {
   espSocket = ws;
   Stats.findByIdAndUpdate('counters', { $inc: { reconnects: 1 } }).exec();
@@ -69,7 +73,7 @@ wss.on('connection', ws => {
     espSocket = null;
   });
 });
-console.log(`[WS] en écoute sur ws://localhost:${WS_PORT}/ws`);
+console.log(`[WS] WebSocket intégré au serveur HTTP sur le même port`);
 
 // 4. Middleware & statics
 app.use(bodyParser.json());
@@ -133,10 +137,4 @@ app.get('/dashboard.html', (req, res) => {
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api/')) return next();
   res.sendFile(path.join(__dirname, '../web-led-control/dashboard.html'));
-});
-
-// 8. Démarrage
-app.listen(PORT_HTTP, () => {
-  console.log(`HTTP & PWA sur http://localhost:${PORT_HTTP}`);
-  console.log(`WebSocket sur port ${WS_PORT}`);
 });

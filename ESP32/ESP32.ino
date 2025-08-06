@@ -8,12 +8,12 @@ const char* WIFI_SSID     = "Hotspot";
 const char* WIFI_PASSWORD = "123412349";
 
 // ——— Serveur WS ———
-const char* WS_HOST = "serveur-p0rezxsj0-josues-projects-9f8f197a.vercel.app";
-const uint16_t WS_PORT = 443; // HTTPS sur Vercel
+const char* WS_HOST = "projet-orange.onrender.com";
+const uint16_t WS_PORT = 443; // HTTPS/WSS sur Render
 const char* WS_PATH = "/ws";
 
 // ——— Pin LED ———
-const int LED_PIN = LED_BUILTIN; // LED intégrée de l'ESP32
+const int LED_PIN = 2; // LED intégrée de l'ESP32
 
 WebSocketsClient webSocket;
 Ticker heartbeat;
@@ -59,11 +59,11 @@ void setup() {
   }
   Serial.printf("\nWi-Fi OK, IP=%s\n", WiFi.localIP().toString().c_str());
 
-  // Setup WebSocket
-  webSocket.begin(WS_HOST, WS_PORT, WS_PATH);
+  // Setup WebSocket SSL pour Render
+  webSocket.beginSSL(WS_HOST, WS_PORT, WS_PATH);
   webSocket.onEvent(onWsEvent);
   webSocket.setReconnectInterval(5000);
-  webSocket.enableHeartbeat(15000, 3000, "ping");
+  webSocket.enableHeartbeat(15000, 3000, 3);
 
   // Heartbeat périodique
   heartbeat.attach(10, [](){
